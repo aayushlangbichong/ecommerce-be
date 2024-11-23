@@ -1,5 +1,6 @@
 import Product from "../models/Product.js";
 import mongoose from "mongoose";
+import Order from "../models/Order.js";
 
 export const createProduct = async (req, res) => {
   try {
@@ -213,6 +214,112 @@ export const getProductsByTags = async (req, res) => {
     console.error("Error fetching products by tags:", error);
     res.status(500).json({
       message: "Internal server error",
+      error: error.message,
+    });
+  }
+};
+
+export const getMostOrderedProducts = async (req, res) => {
+  try {
+    const mostOrderedProducts = await Order.aggregate([
+      // Only consider orders that aren't cancelled and have completed payment
+      {
+        $match: {
+          status: { $ne: "cancelled" },
+          "payment.status": "completed",
+        },
+      },
+      // Unwind the items array to work with individual products
+      { $unwind: "$items" },
+      // Group by product and sum up quantities
+      {
+        $group: {
+          _id: "$items.product",
+          totalQuantitySold: { $sum: "$items.quantity" },
+          totalOrders: { $sum: 1 },
+          totalRevenue: {
+            $sum: { $multiply: ["$items.price", "$items.quantity"] },
+          },
+          averageOrderValue: {
+            $avg: { $multiply: ["$items.price", "$items.quantity"] },
+          },
+        },
+      },
+      // Lookup product details
+      {
+        $lookup: {
+          from: "products",
+          localField: "_id",
+          foreignField: "_id",
+          as: "productDetails",
+        },
+      },
+      // Unwind the productDetails
+      { $unwind: "$productDetails" },
+      // Lookup thumbnail image
+      {
+        $lookup: {
+          from: "images",
+          localField: "productDetails.thumbnail",
+          foreignField: "_id",
+          as: "thumbnailDetails",
+        },
+      },
+      // Lookup picture images
+      {
+        $lookup: {
+          from: "images",
+          localField: "productDetails.pictures",
+          foreignField: "_id",
+          as: "picturesDetails",
+        },
+      },
+      // Lookup categories
+      {
+        $lookup: {
+          from: "categories",
+          localField: "productDetails.category",
+          foreignField: "_id",
+          as: "categoryDetails",
+        },
+      },
+      // Project the final shape of the response
+      {
+        $project: {
+          _id: "$productDetails._id",
+          title: "$productDetails.title",
+          description: "$productDetails.description",
+          price: "$productDetails.price",
+          discountedPrice: "$productDetails.discountedPrice",
+          slug: "$productDetails.slug",
+          tags: "$productDetails.tags",
+          thumbnail: { $arrayElemAt: ["$thumbnailDetails", 0] },
+          pictures: "$picturesDetails",
+          categories: "$categoryDetails",
+          createdAt: "$productDetails.createdAt",
+          updatedAt: "$productDetails.updatedAt",
+          // Sales metrics
+          totalQuantitySold: 1,
+          totalOrders: 1,
+          totalRevenue: 1,
+          averageOrderValue: 1,
+        },
+      },
+      // Sort by total quantity sold in descending order
+      { $sort: { totalQuantitySold: -1 } },
+      // Limit to top 4 products
+      { $limit: 4 },
+    ]);
+
+    res.status(200).json({
+      success: true,
+      data: mostOrderedProducts,
+      message: "Top 5 most ordered products retrieved successfully",
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: "Error retrieving most ordered products",
       error: error.message,
     });
   }

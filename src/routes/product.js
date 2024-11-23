@@ -8,11 +8,13 @@ import {
   getProductById,
   getProductBySlug,
   getProductsByTags,
+  getMostOrderedProducts,
 } from "../controllers/productController.js";
 
 const router = express.Router();
 
 router.get("/", getProducts);
+router.get("/most-ordered", getMostOrderedProducts);
 router.get("/by-tags", getProductsByTags);
 router.get("/:id", getProductById);
 router.get("/slug/:slug", getProductBySlug);

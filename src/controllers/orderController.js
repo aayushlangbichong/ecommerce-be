@@ -40,7 +40,12 @@ export const createOrder = async (req, res) => {
       shippingAddress,
       note,
       payment: {
-        status: paymentId ? "completed" : "pending",
+        status:
+          paymentMethod === "cod"
+            ? "completed"
+            : paymentId
+            ? "completed"
+            : "pending",
         method: paymentMethod,
         paymentId: paymentId,
       },

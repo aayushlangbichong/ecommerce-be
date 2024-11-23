@@ -1,0 +1,48 @@
+Algorithm for Finding Most Ordered Products
+
+Filter Valid Orders
+
+First, we only look at orders that are:
+
+Not cancelled
+Have completed payments
+
+
+This ensures we're counting actual successful sales
+
+
+Break Down Orders into Individual Products
+
+Each order might have multiple items
+We split these orders so each product is counted separately
+For example, if an order has 2 shirts and 3 pants, we separate them for counting
+
+
+Group and Count Products
+
+For each product, we:
+
+Add up total quantity sold across all orders
+Count how many different orders included this product
+Calculate total money made from this product
+Work out average money spent per order
+
+
+
+
+Get Product Details
+
+For each top selling product, we fetch:
+
+Basic info (title, description, price)
+Related images (thumbnail and other pictures)
+Category information
+Other details like tags and timestamps
+
+
+
+
+Sort and Limit
+
+Sort all products by their total quantity sold (highest to lowest)
+Take only the top 5 products from this sorted list
